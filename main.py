@@ -1,4 +1,4 @@
-import os.path
+import os
 import tensorflow as tf
 import helper
 import warnings
@@ -32,7 +32,7 @@ def load_vgg(sess, vgg_path):
     vgg_layer3_out_tensor_name = 'layer3_out:0'
     vgg_layer4_out_tensor_name = 'layer4_out:0'
     vgg_layer7_out_tensor_name = 'layer7_out:0'
-    
+
     return None, None, None, None, None
 tests.test_load_vgg(load_vgg, tf)
 
@@ -85,10 +85,13 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
 tests.test_train_nn(train_nn)
 
 
+DEFAULT_DATA_DIR = "./data"
+
+
 def run():
     num_classes = 2
     image_shape = (160, 576)
-    data_dir = './data'
+    data_dir = os.getenv("DATA_DIR", DEFAULT_DATA_DIR)
     runs_dir = './runs'
     tests.test_for_kitti_dataset(data_dir)
 
