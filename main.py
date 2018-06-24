@@ -1,3 +1,4 @@
+import numpy
 import os
 import tensorflow as tf
 import helper
@@ -24,17 +25,36 @@ def load_vgg(sess, vgg_path):
     :param vgg_path: Path to vgg folder, containing "variables/" and "saved_model.pb"
     :return: Tuple of Tensors from VGG model (image_input, keep_prob, layer3_out, layer4_out, layer7_out)
     """
-    # TODO: Implement function
-    #   Use tf.saved_model.loader.load to load the model and weights
     vgg_tag = 'vgg16'
+
     vgg_input_tensor_name = 'image_input:0'
     vgg_keep_prob_tensor_name = 'keep_prob:0'
     vgg_layer3_out_tensor_name = 'layer3_out:0'
     vgg_layer4_out_tensor_name = 'layer4_out:0'
     vgg_layer7_out_tensor_name = 'layer7_out:0'
 
-    return None, None, None, None, None
+    tf.saved_model.loader.load(sess, [vgg_tag], vgg_path)
+    graph = tf.get_default_graph()
+
+    image_input = graph.get_tensor_by_name(vgg_input_tensor_name)
+    keep_prob = graph.get_tensor_by_name(vgg_keep_prob_tensor_name)
+    layer3_out = graph.get_tensor_by_name(vgg_layer3_out_tensor_name)
+    layer4_out = graph.get_tensor_by_name(vgg_layer4_out_tensor_name)
+    layer7_out = graph.get_tensor_by_name(vgg_layer7_out_tensor_name)
+
+    return image_input, keep_prob, layer3_out, layer4_out, layer7_out
 tests.test_load_vgg(load_vgg, tf)
+
+
+def conv_1x1(layer, num_classes):
+    return tf.layers.conv2d(layer, num_classes, kernel_size=(1, 1), strides=(1, 1), padding="same",
+                            kernel_regularizer=tf.contrib.layers.l2_regularizer(1e-3))
+
+
+def upsampled(layer, num_classes, kernel_size, strides):
+    return tf.layers.conv2d_transpose(layer, num_classes,
+                                      kernel_size=(kernel_size, kernel_size),  strides=(strides, strides),
+                                      padding="same")
 
 
 def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
@@ -46,8 +66,20 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
     :param num_classes: Number of classes to classify
     :return: The Tensor for the last layer of output
     """
-    # TODO: Implement function
-    return None
+
+    # 1x1 convolution for encoder layers
+    elayer3_conv1x1 = conv_1x1(vgg_layer3_out, num_classes)
+    elayer4_conv1x1 = conv_1x1(vgg_layer4_out, num_classes)
+    elayer7_conv1x1 = conv_1x1(vgg_layer7_out, num_classes)
+
+    # implement decoder layers
+    dlayer1 = upsampled(elayer7_conv1x1, 2, 4, 2)
+    dlayer2 = tf.add(dlayer1, elayer4_conv1x1)
+    dlayer3 = upsampled(dlayer2, 2, 4, 2)
+    dlayer4 = tf.add(dlayer3, elayer3_conv1x1)
+    doutput = upsampled(dlayer4, 2, 16, 8)
+
+    return doutput
 tests.test_layers(layers)
 
 
@@ -60,10 +92,21 @@ def optimize(nn_last_layer, correct_label, learning_rate, num_classes):
     :param num_classes: Number of classes to classify
     :return: Tuple of (logits, train_op, cross_entropy_loss)
     """
-    # TODO: Implement function
-    return None, None, None
+    logits = tf.reshape(nn_last_layer, (-1, num_classes))
+    labels = tf.reshape(correct_label, (-1, num_classes))
+
+    cross_entropy = tf.nn.softmax_cross_entropy_with_logits_v2(logits=logits, labels=labels)
+    cross_entropy_loss = tf.reduce_mean(cross_entropy)
+
+    train_op = tf.train.AdamOptimizer(learning_rate).minimize(cross_entropy_loss)
+
+    return logits, train_op, cross_entropy_loss
 tests.test_optimize(optimize)
 
+
+DROPOUT = 0.8
+LEARNING_RATE = 0.0001
+avg_losses = []
 
 def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_loss, input_image,
              correct_label, keep_prob, learning_rate):
@@ -80,8 +123,24 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
     :param keep_prob: TF Placeholder for dropout keep probability
     :param learning_rate: TF Placeholder for learning rate
     """
-    # TODO: Implement function
-    pass
+    for epoch in range(epochs):
+        epoch_losses = []
+        for i, (images, labels) in enumerate(get_batches_fn(batch_size)):
+            _, batch_loss = sess.run([train_op, cross_entropy_loss], feed_dict={
+                    input_image: images,
+                    correct_label: labels,
+                    keep_prob: DROPOUT,
+                    learning_rate: LEARNING_RATE})
+            print("{}/{} batch loss {}".format(epoch, epochs, batch_loss))
+            epoch_losses.append(batch_loss)
+
+        loss = numpy.mean(epoch_losses)
+        avg_losses.append(loss)
+
+        print("{}/{} loss {}.".format(epoch, epochs, loss))
+
+
+print("------------------")
 tests.test_train_nn(train_nn)
 
 
