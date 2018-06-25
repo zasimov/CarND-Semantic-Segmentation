@@ -112,8 +112,8 @@ tests.test_optimize(optimize)
 
 DROPOUT = 0.8
 LEARNING_RATE = 0.0001
-EPOCHS = 20
-BATCH_SIZE = 1
+EPOCHS = int(os.getenv("EPOCHS", 15))
+BATCH_SIZE = int(os.getenv("BATCH_SIZE", 1))
 
 avg_losses = []
 
