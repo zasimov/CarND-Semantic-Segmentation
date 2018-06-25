@@ -140,13 +140,13 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
                     correct_label: labels,
                     keep_prob: DROPOUT,
                     learning_rate: LEARNING_RATE})
-            print("{}/{} batch loss {}".format(epoch, epochs, batch_loss))
+            print("{}/{}/{} batch loss {}.".format(i + 1, epoch + 1, epochs, batch_loss))
             epoch_losses.append(batch_loss)
 
         loss = numpy.mean(epoch_losses)
         avg_losses.append(loss)
 
-        print("{}/{} loss {}.".format(epoch, epochs, loss))
+        print("{}/{} loss {}.".format(epoch + 1, epochs, loss))
 
 
 print("------------------")
