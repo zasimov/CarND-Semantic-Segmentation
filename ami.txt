@@ -1,0 +1,1 @@
+Deep Learning Base AMI (Ubuntu) Version 6.0 (ami-e1cea49e)
