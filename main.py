@@ -18,6 +18,12 @@ else:
     print('Default GPU Device: {}'.format(tf.test.gpu_device_name()))
 
 
+if hasattr(tf.nn, "softmax_cross_entropy_with_logits_v2"):
+    softmax_cross_entropy_with_logits = tf.nn.softmax_cross_entropy_with_logits_v2
+else:
+    softmax_cross_entropy_with_logits = tf.nn.softmax_cross_entropy_with_logits
+
+
 def load_vgg(sess, vgg_path):
     """
     Load Pretrained VGG Model into TensorFlow.
@@ -95,7 +101,7 @@ def optimize(nn_last_layer, correct_label, learning_rate, num_classes):
     logits = tf.reshape(nn_last_layer, (-1, num_classes))
     labels = tf.reshape(correct_label, (-1, num_classes))
 
-    cross_entropy = tf.nn.softmax_cross_entropy_with_logits_v2(logits=logits, labels=labels)
+    cross_entropy = softmax_cross_entropy_with_logits(logits=logits, labels=labels)
     cross_entropy_loss = tf.reduce_mean(cross_entropy)
 
     train_op = tf.train.AdamOptimizer(learning_rate).minimize(cross_entropy_loss)
@@ -173,7 +179,9 @@ def run():
     learning_rate = tf.placeholder(tf.float32)
     keep_prob = tf.placeholder(tf.float32)
 
-    with tf.Session() as sess:
+    config = tf.ConfigProto()
+    config.gpu_options.allow_growth = True
+    with tf.Session(config=config) as sess:
         # OPTIONAL: Augment Images for better results
         #  https://datascience.stackexchange.com/questions/5224/how-to-prepare-augment-images-for-neural-network
         input_image, keep_prob, layer3, layer4, layer7 = load_vgg(sess, vgg_path)
