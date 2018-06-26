@@ -1,5 +1,5 @@
 import numpy
-import os
+import os, sys
 import tensorflow as tf
 import helper
 import warnings
@@ -141,12 +141,14 @@ def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_l
                     keep_prob: DROPOUT,
                     learning_rate: LEARNING_RATE})
             print("{}/{}/{} batch loss {}.".format(i + 1, epoch + 1, epochs, batch_loss))
+            sys.stdout.flush()
             epoch_losses.append(batch_loss)
 
         loss = numpy.mean(epoch_losses)
         avg_losses.append(loss)
 
         print("{}/{} loss {}.".format(epoch + 1, epochs, loss))
+        sys.stdout.flush()
 
 
 print("------------------")
